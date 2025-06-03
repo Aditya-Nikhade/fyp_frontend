@@ -1,0 +1,244 @@
+Keep the frontend same as before, but add a charts button:
+
+
+
+This is where you'll use a JavaScript charting library (like Chart.js, Plotly.js, D3.js, etc.) to render the graphs using the data received from the server.
+Assuming you're using Chart.js (a popular and relatively easy-to-use library):
+HTML (Include Chart.js and add canvas elements):
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Energy Market Optimization</title>
+    <!-- Include Chart.js from a CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container { width: 80%; margin: 20px auto; }
+    </style>
+</head>
+<body>
+    <h1>Energy Market Optimization</h1>
+    <button id="optimizeButton">Run Optimization</button>
+    <button id="getResultButton">Get Latest Result</button>
+    <div>
+        <h2>Optimization Results:</h2>
+        <pre id="finalResultsOutput"></pre>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="objectiveChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="pricesChart"></canvas> <!-- For L Plot -->
+    </div>
+    <div class="chart-container">
+        <canvas id="productionsChart"></canvas> <!-- For P Plot -->
+    </div>
+    <div class="chart-container">
+        <canvas id="supplyDemandChart"></canvas> <!-- For SD Plot -->
+    </div>
+
+    <script>
+        // --- Chart instances (global or scoped appropriately) ---
+        let objectiveChartInstance, pricesChartInstance, productionsChartInstance, supplyDemandChartInstance;
+
+        // --- Function to create/update a chart ---
+        function createOrUpdateChart(chartInstance, canvasId, chartType, labels, datasets, options = {}) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            if (chartInstance) {
+                chartInstance.destroy(); // Destroy previous instance if exists
+            }
+            return new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        x: { title: { display: true, text: 'Iteration' } },
+                        y: { title: { display: true, text: options.yLabel || 'Value' } }
+                    },
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: true, text: options.title || 'Chart' }
+                    },
+                    ...options.chartOptions // Allow overriding default chart options
+                }
+            });
+        }
+
+        // --- Function to render all graphs ---
+        function renderGraphs(data) {
+            const iterationsPerformed = data.iterations_performed;
+            const iterationLabels = Array.from({ length: iterationsPerformed }, (_, i) => i + 1);
+
+            // 1. Objective Plot
+            if (data.objective_plot) {
+                objectiveChartInstance = createOrUpdateChart(
+                    objectiveChartInstance,
+                    'objectiveChart',
+                    'line',
+                    iterationLabels,
+                    [{
+                        label: 'Objective Value',
+                        data: data.objective_plot,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }],
+                    { title: 'Objective Function Convergence', yLabel: 'Objective Value' }
+                );
+            }
+
+            // 2. Prices (L) Plot
+            if (data.l_plot && data.l_plot.length > 0) {
+                const priceDatasets = [];
+                const numPrices = data.l_plot[0].length; // Should be 3 (l0, l1, l2)
+                const priceColors = ['rgb(255, 99, 132)', 'rgb(54, 162, 235)', 'rgb(255, 205, 86)'];
+
+                for (let i = 0; i < numPrices; i++) {
+                    priceDatasets.push({
+                        label: `Price L${i + 1}`,
+                        data: data.l_plot.map(iterData => iterData[i]),
+                        borderColor: priceColors[i % priceColors.length],
+                        tension: 0.1,
+                        fill: false
+                    });
+                }
+                pricesChartInstance = createOrUpdateChart(
+                    pricesChartInstance,
+                    'pricesChart',
+                    'line',
+                    iterationLabels,
+                    priceDatasets,
+                    { title: 'Market Prices (L)', yLabel: 'Price ($/MWh)' }
+                );
+            }
+
+            // 3. Productions (P) Plot
+            if (data.p_plot && data.p_plot.length > 0) {
+                const productionDatasets = [];
+                const numProducers = data.p_plot[0].length; // Should be 3 (p0, p1, p2)
+                const prodColors = ['rgb(153, 102, 255)', 'rgb(255, 159, 64)', 'rgb(75, 192, 75)'];
+
+                for (let i = 0; i < numProducers; i++) {
+                    productionDatasets.push({
+                        label: `Producer P${i + 1}`,
+                        data: data.p_plot.map(iterData => iterData[i]),
+                        borderColor: prodColors[i % prodColors.length],
+                        tension: 0.1,
+                        fill: false
+                    });
+                }
+                productionsChartInstance = createOrUpdateChart(
+                    productionsChartInstance,
+                    'productionsChart',
+                    'line',
+                    iterationLabels,
+                    productionDatasets,
+                    { title: 'Producer Power Generation (P)', yLabel: 'Power (MW)' }
+                );
+            }
+
+            // 4. Supply/Demand (SD) Plot
+            if (data.sd_plot && data.sd_plot.length > 0) {
+                supplyDemandChartInstance = createOrUpdateChart(
+                    supplyDemandChartInstance,
+                    'supplyDemandChart',
+                    'line',
+                    iterationLabels,
+                    [
+                        {
+                            label: 'Total Generation (TG)',
+                            data: data.sd_plot.map(iterData => iterData[0]),
+                            borderColor: 'rgb(255, 99, 71)', // Tomato
+                            tension: 0.1,
+                            fill: false
+                        },
+                        {
+                            label: 'Total Demand (TD)',
+                            data: data.sd_plot.map(iterData => iterData[1]),
+                            borderColor: 'rgb(60, 179, 113)', // MediumSeaGreen
+                            tension: 0.1,
+                            fill: false
+                        }
+                    ],
+                    { title: 'Total Generation and Demand (SD)', yLabel: 'Power (MW)' }
+                );
+            }
+        }
+
+
+        // --- Event Listeners ---
+        document.getElementById('optimizeButton').addEventListener('click', async () => {
+            const iterationsToRun = parseInt(prompt("Enter max iterations for optimization:", "1000")) || 1000;
+            document.getElementById('finalResultsOutput').textContent = 'Running optimization...';
+            try {
+                const response = await fetch('/api/optimize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ iterations_to_run: iterationsToRun })
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
+                // Display final results (excluding plot data for brevity here)
+                const { objective_plot, l_plot, p_plot, sd_plot, ...finalData } = data;
+                document.getElementById('finalResultsOutput').textContent = JSON.stringify(finalData, null, 2);
+                renderGraphs(data); // Pass the full data with plot arrays
+            } catch (error) {
+                document.getElementById('finalResultsOutput').textContent = `Error: ${error.message}`;
+                console.error('Optimization error:', error);
+            }
+        });
+
+        document.getElementById('getResultButton').addEventListener('click', async () => {
+            document.getElementById('finalResultsOutput').textContent = 'Fetching latest result...';
+            try {
+                const response = await fetch('/api/result');
+                const data = await response.json();
+                 if (!response.ok) {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
+                // Display final results (excluding plot data for brevity here)
+                const { objective_plot, l_plot, p_plot, sd_plot, ...finalData } = data;
+                document.getElementById('finalResultsOutput').textContent = JSON.stringify(finalData, null, 2);
+
+                // Render graphs if plot data is available in the stored result
+                if (data.objective_plot || data.l_plot || data.p_plot || data.sd_plot) {
+                    renderGraphs(data);
+                } else {
+                    console.log("No plotting data found in the stored result. Graphs will not be rendered.");
+                    // Optionally clear old graphs
+                    if(objectiveChartInstance) objectiveChartInstance.destroy();
+                    if(pricesChartInstance) pricesChartInstance.destroy();
+                    if(productionsChartInstance) productionsChartInstance.destroy();
+                    if(supplyDemandChartInstance) supplyDemandChartInstance.destroy();
+
+                }
+            } catch (error) {
+                document.getElementById('finalResultsOutput').textContent = `Error: ${error.message}`;
+                console.error('Get result error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+Use code with caution.
+Html
+Key Frontend Changes:
+Include Chart.js: Added the CDN link.
+Canvas Elements: Added <canvas> elements for each graph.
+renderGraphs(data) function:
+Takes the full data object from the server response (which includes objective_plot, l_plot, p_plot, sd_plot).
+Creates labels for the x-axis (iterations 1 to N).
+For each type of plot:
+Prepares datasets in the format Chart.js expects.
+For multi-line plots (like Prices and Productions), it iterates through the inner arrays.
+Calls createOrUpdateChart to draw.
+createOrUpdateChart helper function: A generic function to initialize or update a Chart.js chart. It destroys the previous chart instance on the same canvas if it exists, allowing for re-rendering.
+API Calls:
+When /api/optimize is called, the renderGraphs function is called with the response data.
+When /api/result is called, it also calls renderGraphs if the plotting data is present in the fetched result.

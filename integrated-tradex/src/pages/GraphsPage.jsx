@@ -61,10 +61,10 @@ const GraphsPage = () => {
               pPlot={results.p_plot}
               sdPlot={results.sd_plot}
             />
-          </div>
-
+        </div>
+        
           {/* Additional Graphs */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-xl font-semibold mb-4">Additional Market Insights</h3>
             <AdditionalGraphs 
               objective={results.objective}
