@@ -10,10 +10,19 @@ const Dashboard = () => {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showWarning, setShowWarning] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/auth');
+  };
+
+  const handleGraphsClick = () => {
+    if (!results) {
+      setShowWarning(true);
+    } else {
+      navigate('/graphs', { state: { results } });
+    }
   };
 
   const runOptimization = async () => {
@@ -56,6 +65,13 @@ const Dashboard = () => {
             >
               {loading ? 'Running...' : 'Run Iterations'}
             </button>
+
+            <button 
+              onClick={handleGraphsClick}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Graphs
+            </button>
             
             <button 
               onClick={handleLogout}
@@ -66,6 +82,24 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Warning Popup */}
+      {showWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md">
+            <h3 className="text-xl font-bold mb-4">Warning</h3>
+            <p className="mb-6">Please run iterations first to view the graphs.</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowWarning(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
@@ -79,15 +113,19 @@ const Dashboard = () => {
           <div className="space-y-8">
             <MarketResults 
               objective={results.objective}
-              prices={results.prices}
-              productions={results.productions}
-              demands={results.demands}
+              prices={results.l}
+              productions={results.p}
+              demands={results.q}
+              objectivePlot={results.objective_plot}
+              lPlot={results.l_plot}
+              pPlot={results.p_plot}
+              sdPlot={results.sd_plot}
             />
             
             <ProducerConsumerResults
-              productions={results.productions}
-              prices={results.prices}
-              demands={results.demands}
+              productions={results.p}
+              prices={results.l}
+              demands={results.q}
             />
 
             <div className="text-sm text-gray-600 bg-white p-4 rounded-lg shadow-md">
