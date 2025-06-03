@@ -1,22 +1,21 @@
 import React from 'react';
 
-const ProducerConsumerResults = () => {
-  // Producer data
-  const producers = [
-    { id: 1, production: 203.4782, price: 423.9389 },
-    { id: 2, production: 203.4763, price: 423.9312 },
-    { id: 3, production: 203.4744, price: 423.9312 }
-  ];
+const ProducerConsumerResults = ({ productions, prices, demands }) => {
+  // Transform data for producers
+  const producers = productions?.map((production, i) => ({
+    id: i + 1,
+    production,
+    price: prices?.[i] || 0
+  })) || [];
 
-  // Consumer data with allocation from each generator
-  const consumers = [
-    { id: 1, fromGen1: 38.1160, fromGen2: 38.1164, fromGen3: 38.1168, total: 114.3492 },
-    { id: 2, fromGen1: 34.3783, fromGen2: 34.3743, fromGen3: 34.3704, total: 103.1230 },
-    { id: 3, fromGen1: 36.2780, fromGen2: 36.2785, fromGen3: 36.2789, total: 108.8354 },
-    { id: 4, fromGen1: 36.2780, fromGen2: 36.2785, fromGen3: 36.2789, total: 108.8354 },
-    { id: 5, fromGen1: 29.2050, fromGen2: 29.2054, fromGen3: 29.2058, total: 87.6162 },
-    { id: 6, fromGen1: 29.2050, fromGen2: 29.2054, fromGen3: 29.2058, total: 87.6162 }
-  ];
+  // Transform data for consumers
+  const consumers = demands?.map((demandRow, i) => ({
+    id: i + 1,
+    fromGen1: demandRow?.[0] || 0,
+    fromGen2: demandRow?.[1] || 0,
+    fromGen3: demandRow?.[2] || 0,
+    total: demandRow?.reduce((sum, d) => sum + d, 0) || 0
+  })) || [];
 
   return (
     <div className="space-y-8">

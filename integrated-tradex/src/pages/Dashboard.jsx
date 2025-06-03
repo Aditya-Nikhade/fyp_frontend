@@ -1,6 +1,8 @@
 import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
+import MarketResults from '../components/MarketResults';
+import ProducerConsumerResults from '../components/ProducerConsumerResults';
 
 const Dashboard = () => {
   const { logout } = useContext(AuthContext);
@@ -74,40 +76,23 @@ const Dashboard = () => {
         )}
 
         {results && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold mb-6 text-center">Optimization Results</h2>
+          <div className="space-y-8">
+            <MarketResults 
+              objective={results.objective}
+              prices={results.prices}
+              productions={results.productions}
+              demands={results.demands}
+            />
             
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Objective Value</h3>
-                <p className="text-2xl font-mono">{results.objective.toFixed(4)}</p>
-              </div>
+            <ProducerConsumerResults
+              productions={results.productions}
+              prices={results.prices}
+              demands={results.demands}
+            />
 
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Prices (λ)</h3>
-                <div className="bg-gray-50 p-4 rounded">
-                  <pre className="font-mono">{JSON.stringify(results.prices, null, 2)}</pre>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Productions (p)</h3>
-                <div className="bg-gray-50 p-4 rounded">
-                  <pre className="font-mono">{JSON.stringify(results.productions, null, 2)}</pre>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Demands (q)</h3>
-                <div className="bg-gray-50 p-4 rounded">
-                  <pre className="font-mono">{JSON.stringify(results.demands, null, 2)}</pre>
-                </div>
-              </div>
-
-              <div className="text-sm text-gray-600">
-                <p>Iterations performed: {results.iterations_performed}</p>
-                <p>Max iterations requested: {results.max_iterations_requested}</p>
-              </div>
+            <div className="text-sm text-gray-600 bg-white p-4 rounded-lg shadow-md">
+              <p>Iterations performed: {results.iterations_performed}</p>
+              <p>Max iterations requested: {results.max_iterations_requested}</p>
             </div>
           </div>
         )}
